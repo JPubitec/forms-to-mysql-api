@@ -54,7 +54,7 @@ def ingest(payload: FormPayload, x_api_key: str | None = Header(default=None)):
         )
     else:
         cur.execute(
-            "INSERT INTO people (nombre, apellido) VALUES (%s, %s)",
+            "INSERT INTO persona (nombre, apellido) VALUES (%s, %s)",
             (payload.nombre.strip(), payload.apellido.strip()),
         )
 
