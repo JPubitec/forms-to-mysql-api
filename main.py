@@ -63,39 +63,21 @@ def ingest(payload: FormPayload, x_api_key: str | None = Header(default=None)):
     cn.close()
     return {"ok": True}
 
-def get_conn_1():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME"),
-        port=int(os.getenv("DB_PORT", "3306")),
-    )
+from fastapi import HTTPException
 
-def db_fetch_latest(limit: int = 1000):
-    conn = get_conn_1()
-    cur = conn.cursor()
+@app.get("/data/latest")
+def get_latest():
+    sql = """
+        SELECT *
+        FROM persona
+    """
     try:
+        conn = get_conn()
         cur = conn.cursor(dictionary=True)
-        # Cambia `submissions` por tu tabla real
-        cur.execute(
-            """
-            SELECT *
-            FROM submissions
-            ORDER BY created_at DESC
-            LIMIT %s
-            """,
-            (limit,),
-        )
-        rows = cur.fetchall()  # list[dict]
-        return rows
-    finally:
-        try:
-            cur.close()
-        except Exception:
-            pass
+        cur.execute(sql)
+        rows = cur.fetchall() or []
+        cur.close()
         conn.close()
-
-@app.get("/forms/submision")
-def list_submissions(limit: int = Query(1000, ge=1, le=20000)):
-    return db_fetch_latest(limit)
+        return {"rows": rows, "count": len(rows)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
